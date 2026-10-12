@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "aster-test",
+  "version": "1.0.0",
+  "name": "Aster client tests",
+  "environment": "client",
+  "entrypoints": { "fabric-client-gametest": ["dev.aster.test.DashboardGameTest"] }
+}

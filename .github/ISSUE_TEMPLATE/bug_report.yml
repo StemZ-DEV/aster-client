@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a crash or incorrect behavior in Aster.
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Aster, Minecraft, Fabric Loader, Fabric API, Java, and your operating system.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and expected result
+      description: Explain how to reproduce it and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other installed mods
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log or crash excerpt
+      description: Remove account tokens, server addresses, and personal paths before posting.
+      render: text

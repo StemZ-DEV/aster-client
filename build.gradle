@@ -1,0 +1,112 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+loom {
+    splitEnvironmentSourceSets()
+    mods {
+        aster {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+    }
+    runs {
+        client {
+            vmArg '-Daster.dev=true'
+        }
+    }
+}
+
+fabricApi.configureTests {
+    createSourceSet = true
+    modId = 'aster-test'
+    enableGameTests = false
+    enableClientGameTests = true
+}
+
+loom.runs.clientGameTest { vmArg '-Daster.dev=false' }
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+processResources {
+    def replacements = [version: project.version.toString(), minecraftVersion: project.minecraft_version,
+        loaderVersion: project.loader_version, fabricApiVersion: project.fabric_api_version.tokenize('+').first()]
+    inputs.properties(replacements)
+    filesMatching('fabric.mod.json') { expand replacements }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
+test { useJUnitPlatform() }
+jar {
+    from('LICENSE') { rename { 'LICENSE_aster' } }
+    from('THIRD_PARTY_NOTICES.md')
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+def releaseDirectory = layout.buildDirectory.dir("release/${project.version}")
+
+tasks.register('releaseBundle', Zip) {
+    dependsOn build
+    archiveFileName = "aster-client-${project.version}-release.zip"
+    destinationDirectory = releaseDirectory
+    into("aster-client-${project.version}") {
+        from(tasks.jar)
+        from('LICENSE', 'README.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md')
+        into('docs') { from('docs') { exclude 'V1_PLAN.md' } }
+    }
+}
+
+tasks.register('sourceArchive', Zip) {
+    includeEmptyDirs = false
+    archiveFileName = "aster-client-${project.version}-source.zip"
+    destinationDirectory = releaseDirectory
+    into("aster-client-${project.version}") {
+        from(projectDir) {
+            include 'src/**', 'tools/**', 'docs/**', 'gradle/**', '.github/**'
+            include 'gradlew', 'gradlew.bat', '*.gradle', 'gradle.properties', '.gitignore'
+            include 'README.md', 'LICENSE', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md', 'CONTRIBUTING.md'
+            include '.gitattributes'
+        }
+    }
+}
+
+tasks.register('stageReleaseJars', Copy) {
+    from(tasks.jar, tasks.sourcesJar)
+    into(releaseDirectory)
+}
+
+tasks.register('prepareRelease') {
+    dependsOn tasks.named('releaseBundle'), tasks.named('sourceArchive'), tasks.named('stageReleaseJars')
+    inputs.files(tasks.jar, tasks.sourcesJar, tasks.named('releaseBundle'), tasks.named('sourceArchive'))
+    outputs.file(releaseDirectory.map { it.file('SHA256SUMS.txt') })
+    doLast {
+        def directory = releaseDirectory.get().asFile
+        def artifacts = directory.listFiles().findAll { it.name.endsWith('.jar') || it.name.endsWith('.zip') }.sort { it.name }
+        def checksums = artifacts.collect { artifact ->
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            artifact.withInputStream { stream ->
+                byte[] buffer = new byte[8192]
+                int length
+                while ((length = stream.read(buffer)) != -1) digest.update(buffer, 0, length)
+            }
+            "${digest.digest().encodeHex()}  ${artifact.name}"
+        }
+        new File(directory, 'SHA256SUMS.txt').text = checksums.join('\n') + '\n'
+    }
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "aster",
+  "version": "${version}",
+  "name": "Aster",
+  "description": "A frameless modern client with module search, named profiles, zoom, lighting, and HUD tools.",
+  "authors": ["Aster"],
+  "license": "MIT",
+  "icon": "assets/aster/icon.png",
+  "contact": {
+    "homepage": "https://github.com/StemZ-DEV/aster-client",
+    "sources": "https://github.com/StemZ-DEV/aster-client",
+    "issues": "https://github.com/StemZ-DEV/aster-client/issues"
+  },
+  "environment": "client",
+  "entrypoints": { "client": ["dev.aster.client.AsterClient"] },
+  "mixins": ["aster.client.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${loaderVersion}",
+    "minecraft": "~${minecraftVersion}",
+    "java": ">=25",
+    "fabric-api": ">=${fabricApiVersion}"
+  }
+}
