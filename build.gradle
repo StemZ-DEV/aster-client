@@ -25,6 +25,8 @@ fabricApi.configureTests {
 }
 
 loom.runs.clientGameTest { vmArg '-Daster.dev=false' }
+// CI supplies one explicitly configured 24-bit display; avoid Loom nesting another Xvfb instance.
+tasks.named('runClientGameTest') { useXvfb = false }
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
